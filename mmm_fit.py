@@ -12,7 +12,7 @@ def makedir(pathdir):
         os.mkdir(pathdir)
         print('Create directory: {}'.format(pathdir))
     except:
-        print('Cannot create directory: {}'.format(pathdir))
+        #print('Cannot create directory: {}'.format(pathdir))
         pass
 
 
@@ -67,9 +67,9 @@ def doplot(df, result, x_col, y_col):
     
     ax1.plot(df['t'], df[y_col], 'ok', label=y_col)
     ax1.plot(df['t'], ynewpred, 'r-', label='Predicted')
-    ax2.plot(df['t'], residuals, 'ob')
+    ax2.plot(df['t'], residuals, 'sk')
     
-    ax2.axhline(0.0, 0.0, 1.0, color ='k', ls = ':', linewidth = 0.4)
+    ax2.axhline(0.0, 0.0, 1.0, color ='k', ls = '--', linewidth = 0.8)
     lim_res = np.max(np.abs([ax2.get_ybound()]))
     ax2.set_ylim(-lim_res*3, lim_res*3)
     
@@ -105,9 +105,9 @@ def replace_simpletable(simpletable):
     return richtable
     
 def weblog_item(wlog, result, x_col, y_col, n=1):
-    wlog.write('<h4>Test {0}</h4>\n'.format(n))
+    wlog.write('<h1>Test {0}</h1>\n'.format(n))
     wlog.write('Independent columns: {}<br>\n'.format('_'.join(np.atleast_1d(x_col))))
-    wlog.write('Dependent columns: {}<br>\n'.format('_'.join(np.atleast_1d(y_col))))
+    wlog.write('Dependent columns: {}<br><br>\n'.format('_'.join(np.atleast_1d(y_col))))
     simpletable = short_summary(result)
     richtable = replace_simpletable(simpletable)
     wlog.write(richtable)
@@ -116,7 +116,7 @@ def weblog_item(wlog, result, x_col, y_col, n=1):
     wlog.write('<hr>\n')
 
 def main():
-    df = read_data(csv_file= 'test_data.csv')
+    df = read_data()
     print(df)
     y_col = 'c3'
     wlog = start_weblog()
