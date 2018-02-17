@@ -19,7 +19,13 @@ def makedir(pathdir):
 def convert_to_datetime(df, c):
     # Select a column to convert to datetime
     df[c] = pd.to_datetime(df[c])
-    df[c+'_num'] = df[c].values.astype('float')
+    #df[c+'_num'] = df[c].values.astype('float')  # Convert to numerical time
+    return df
+
+def standarize_df(df, date_col):
+    cols = [c for c in df.columns if c != date_col]
+    for c in cols:
+        df[c] = (df[c]-df[c].mean())/df[c].std()
     return df
 
 def read_data(csv_file, date_col):
@@ -28,6 +34,7 @@ def read_data(csv_file, date_col):
 
     # Convert t column to datetime and create numeric t column
     df = convert_to_datetime(df, date_col)
+    df = standarize_df(df, date_col)
     return df
 
 def run_ols(df, x_col, y_col):
@@ -97,10 +104,23 @@ def replace_simpletable(simpletable):
     richtable = simpletable.replace('class="simpletable"', 'bgcolor="#eeeeee" border="3px" cellspacing = "0" cellpadding = "4px" style="width:30%"')
     return richtable
 
+def weblog_priority(wlog):
+    wlog.write('<h1>Column priority</h1>\n')
+    with open('priority.txt', 'rb') as p:
+        lines = p.readlines()
+        wlog.write('<table bgcolor="#eeeeee" border="3px" cellspacing = "0" cellpadding = "4px" style="width:40%">\n')
+        wlog.write('<tr><td>{0:10}</td><td> {1:5}</td>\n'.format('Column', 'Rsquared improvement %'))
+        for line in lines[1:]:
+            c, i = line.split()
+            wlog.write('<tr><td>{0:10}</td><td> {1:5}</td>\n'.format(c,i))
+        wlog.write('</table><br>\n')
+
+
 def weblog_item(wlog, result, x_col, y_col, n=1):
-    wlog.write('<h1>Test {0}</h1>\n'.format(n))
+    wlog.write('<h2>Test {0}</h2>\n'.format(n))
     wlog.write('Independent columns: {}<br>\n'.format('_'.join(np.atleast_1d(x_col))))
     wlog.write('Dependent columns: {}<br><br>\n'.format('_'.join(np.atleast_1d(y_col))))
+    wlog.write('Rsquared: {0:6.4f}<br><br>\n'.format(result.rsquared))
     simpletable = short_summary(result)
     richtable = replace_simpletable(simpletable)
     wlog.write(richtable)
@@ -108,13 +128,48 @@ def weblog_item(wlog, result, x_col, y_col, n=1):
     wlog.write('<a href = "{0}"><img style="max-width:700px" src="{0}"></a><br>\n'.format(filename))
     wlog.write('<hr>\n')
 
+
+
+### Variable selection
+
+def check_improvement_c(df, c, date_col, y_col):
+    cols_no_c = [ci for ci in df.columns if ci not in [date_col, y_col, c]]
+    cols      = [ci for ci in df.columns if ci not in [date_col, y_col]]
+    # Without column c:
+    res_wout_c = run_ols(df, x_col=cols_no_c, y_col=y_col)
+    # With column c:
+    res_with_c = run_ols(df, x_col=cols, y_col=y_col)
+    #print res_wout_c.summary()
+    #print res_with_c.summary()
+    improvement =  (res_with_c.rsquared-res_wout_c.rsquared)/res_wout_c.rsquared*100.
+    return improvement
+
+
+
+def column_priority(df, date_col, y_col):
+    columns = [ci for ci in df.columns if ci not in [date_col, y_col]]
+    imp = []
+    for c in columns:
+        imp.append(check_improvement_c(df, c, date_col, y_col))
+    # Short descending order:
+    imp, columns = zip(*sorted(zip(imp,columns))[::-1])
+    with open('priority.txt', 'wb') as p:
+        p.write('{0:10} {1:5}\n'.format('Column', 'Rsquared improvement %'))
+        for c, i in zip(columns, imp):
+            p.write('{0:10} {1:5.3f}\n'.format(c,i))
+
+
+
 def main(csv_file, date_col,y_col):
     df = read_data(csv_file, date_col)
     #df = pd.read_csv('http://vincentarelbundock.github.io/Rdatasets/csv/MASS/Boston.csv')
     print(df)
+    # First check variable priority:
+    column_priority(df, date_col, y_col)
     wlog = start_weblog()
     i = 0
     with open('x_cols.dat', 'rb') as columns:
+        weblog_priority(wlog)
         for x_columns  in columns:
             print(x_columns)
             x_col = x_columns.strip('\n').split(',')
