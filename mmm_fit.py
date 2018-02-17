@@ -22,13 +22,7 @@ def convert_to_datetime(df, c):
     df[c+'_num'] = df[c].values.astype('float')
     return df
 
-def read_data(csv_file=None):
-    if csv_file == None:
-        try:
-            csv_file = sys.argv[1]
-        except:
-            print('Unable to read csv file')
-            print('Usage: python mmm_fit.py <csv_file>')
+def read_data(csv_file, date_col):
     df = pd.read_csv(csv_file)
     print('Read csv file: ', csv_file)
 
@@ -46,7 +40,7 @@ def run_ols(df, x_col, y_col):
     #print(olsres.summary())
     return olsres
 
-def doplot(df, result, x_col, y_col):
+def doplot(df, result, x_col, y_col, date_col):
     makedir('./plots')
     print result.summary()
     ynewpred =  result.predict() # predict out of sample
@@ -86,9 +80,9 @@ def doplot(df, result, x_col, y_col):
     fig.savefig('./plots/'+filename)
     return
 
-def do_fit(df, x_col, y_col):
+def do_fit(df, x_col, y_col, date_col):
     result = run_ols( df, x_col, y_col)
-    doplot(df, result, x_col, y_col)
+    doplot(df, result, x_col, y_col, date_col)
     return result
 
 def short_summary(est):
@@ -114,8 +108,8 @@ def weblog_item(wlog, result, x_col, y_col, n=1):
     wlog.write('<a href = "{0}"><img style="max-width:700px" src="{0}"></a><br>\n'.format(filename))
     wlog.write('<hr>\n')
 
-def main():
-    df = read_data()
+def main(csv_file, date_col,y_col):
+    df = read_data(csv_file, date_col)
     #df = pd.read_csv('http://vincentarelbundock.github.io/Rdatasets/csv/MASS/Boston.csv')
     print(df)
     wlog = start_weblog()
@@ -124,15 +118,20 @@ def main():
         for x_columns  in columns:
             print(x_columns)
             x_col = x_columns.strip('\n').split(',')
-            result = do_fit(df, x_col, y_col)
+            result = do_fit(df, x_col, y_col, date_col)
             weblog_item(wlog, result, x_col, y_col, n=i+1)
             i += 1
 
 if __name__ == '__main__':
-    print('Usage:  python mmm_fit.py test_data.csv'
+    try:
+        csv_file = sys.argv[1]
+    except:
+        csv_file = 'test_data.csv'
+        print('Unable to read csv file')
+        print('Usage: python mmm_fit.py <csv_file>')
     y_col = 'c3'
     date_col = 't'
-    main()
+    main(csv_file, date_col, y_col)
 
 
 # Info:
