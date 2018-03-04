@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.api as sm
+from statsmodels.stats.stattools import durbin_watson
 import sys, os
 
 fig_width = 8
@@ -115,12 +116,16 @@ def weblog_priority(wlog):
             wlog.write('<tr><td>{0:10}</td><td> {1:5}</td>\n'.format(c,i))
         wlog.write('</table><br>\n')
 
+def calc_dw(result):
+    dw = durbin_watson(result.resid)
+    return dw
 
 def weblog_item(wlog, result, x_col, y_col, n=1):
     wlog.write('<h2>Test {0}</h2>\n'.format(n))
     wlog.write('Independent columns: {}<br>\n'.format('_'.join(np.atleast_1d(x_col))))
     wlog.write('Dependent columns: {}<br><br>\n'.format('_'.join(np.atleast_1d(y_col))))
-    wlog.write('Rsquared: {0:6.4f}<br><br>\n'.format(result.rsquared))
+    wlog.write('Rsquared: {0:6.4f}<br>\n'.format(result.rsquared))
+    wlog.write('Durbin-Watson: {0:6.4f}<br><br>\n'.format(calc_dw(result)))
     simpletable = short_summary(result)
     richtable = replace_simpletable(simpletable)
     wlog.write(richtable)
@@ -184,7 +189,7 @@ if __name__ == '__main__':
         csv_file = file_to_read
     else:
         default_data = 'test_data.csv'
-        print('Using default file: {}'.format(default_data)
+        print('Using default file: {}'.format(default_data))
         csv_file = default_data
     y_col = 'c3'
     date_col = 't'
