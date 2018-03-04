@@ -178,12 +178,14 @@ def main(csv_file, date_col,y_col):
             i += 1
 
 if __name__ == '__main__':
-    try:
-        csv_file = sys.argv[1]
-    except:
-        csv_file = 'test_data.csv'
-        print('Unable to read csv file')
-        print('Usage: python mmm_fit.py <csv_file>')
+    file_to_read = sys.argv[-3:]
+    print('Usage: python mmm_fit.py <csv_file>')
+    if file_to_read == 'csv':
+        csv_file = file_to_read
+    else:
+        default_data = 'test_data.csv'
+        print('Using default file: {}'.format(default_data)
+        csv_file = default_data
     y_col = 'c3'
     date_col = 't'
     main(csv_file, date_col, y_col)
